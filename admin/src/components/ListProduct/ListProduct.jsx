@@ -23,7 +23,7 @@ function ListProduct() {
           Accept: 'application/json',
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({_id:id})
+        body: JSON.stringify({id:id})
       })
       console.log(id)
       await fetchInfo()
@@ -47,14 +47,14 @@ function ListProduct() {
           {
             allproducts.map((product,index)=>{
               return<> 
-              <div key={product._id} className="listproduct-format-main listproduct-format">
+              <div key={product.id} className="listproduct-format-main listproduct-format">
                   <img src={product.image} alt="" className='listproduct-product-icon'/>
                   <p>{product.name}</p>
                   <p>${product.old_price}</p>
                   <p>${product.new_price}</p>
                   <p>{product.category}</p>
                   {/* {console.log(product)} */}
-                  <img onClick={()=>{remove_product(product._id)}} src={cross_icon} alt="" className='listproduct-remove-icon'/>
+                  <img onClick={()=>{remove_product(product.id)}} src={cross_icon} alt="" className='listproduct-remove-icon'/>
               </div>
               <hr />
               </>

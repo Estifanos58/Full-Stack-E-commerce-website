@@ -52,10 +52,10 @@ app.post('/upload', (req, res) => {
 //Schema for Creating Products
 
 const Product = mongoose.model("Product",{
-    // id:{
-    //     type: Number,
-    //     required: true,
-    // },
+    id:{
+        type: Number,
+        required: true,
+    },
     name:{
         type: String,
         required: true
@@ -90,22 +90,22 @@ const Product = mongoose.model("Product",{
 // Creating AddProduct API
 app.post('/addproduct', async (req,res)=>{
     const products = await Product.find({})
-    // let id;
-    // if (products.length > 0) {
-    //     let last_product = products[products.length - 1]; // get the last product
-    //     id = last_product.id + 1; // increment the id
-    // } else {
-    //     id = 1; // start with 1 if no products exist
-    // }
+    let id;
+    if (products.length > 0) {
+        let last_product = products[products.length - 1]; // get the last product
+        id = last_product.id + 1; // increment the id
+    } else {
+        id = 1; // start with 1 if no products exist
+    }
     const product = new Product({
-        // id: id,
+        id: id,
         name: req.body.name,
         image: req.body.image,
         category: req.body.category,
         new_price: req.body.new_price,
         old_price: req.body.old_price
     })
-    console.log(typeof(product.id))
+    console.log(product)
     await product.save()
     console.log('saved')
     res.json({
@@ -119,8 +119,8 @@ app.post('/addproduct', async (req,res)=>{
 // Creating API for deleting product
 app.delete('/removeproduct', async (req, res) => {
     try {
-        const { _id } = req.body;  // Extract _id from the request body
-        await Product.findByIdAndDelete(_id);  // Use _id for deletion
+        const id  = req.body.id;  // Extract _id from the request body
+        await Product.deleteOne({'id': id});  // Use _id for deletion
         console.log('Product removed');
         res.json({ success: true });
     } catch (error) {
@@ -209,6 +209,93 @@ app.post('/login', async(req,res)=>{
     else{
         res.json({success: false, error: 'Wrong Email'})
     }
+})
+
+// Creating End point for newCollection data
+app.get('/newcollections', async (req, res) => {
+    try {
+        let products = await Product.find({}).sort({ date: -1 }).limit(10); // Fetch the latest 10 products
+        console.log('New Collection Fetched');
+        res.send(products);
+    } catch (error) {
+        console.log(error.message);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Creating End Point for Popular in Women section
+app.get('/popularwomen', async (req, res) => {
+    try{
+        let products = await Product.find({category: 'women'});
+        let popular_in_women = products.slice(0,4);
+        console.log('Popular in women fetched');
+        res.send(popular_in_women);
+
+
+    }catch(error){
+        console.log(error.message)
+    }
+})
+
+// Creating middleware to fetch user
+    const fetchUser = async (req, res, next)=>{
+        const token = req.header('auth-token');
+        if(!token) {
+            res.status(401).send({errors: 'Please authenticate using valid token'});
+        }
+        else{
+            try{
+                const data = jwt.verify(token, 'secret_ecom');
+                req.user = data.user;
+                next()
+            }catch(error){
+                res.status(401).send({errors: 'please authenticate using a valid token'})
+            }
+        }
+    }
+
+// Creating End Point for adding to cart
+app.post('/addtocart', fetchUser, async (req, res) => {
+    try {
+        let userData = await user.findOne({ _id: req.user.id });
+        console.log('userData' + userData)
+
+        if (!userData) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+
+        // Check if the item exists in the cart, if not initialize it
+        if (!userData.cartData[req.body.itemId]) {
+            userData.cartData[req.body.itemId] = 1;  // Initialize item count to 1
+        } else {
+            userData.cartData[req.body.itemId]++;  // Increment item count
+        }
+
+        // Save the updated cart to the database
+        await user.findOneAndUpdate({ _id: req.user.id }, { cartData: userData.cartData });
+
+        res.json({ success: true, message: "Item added to cart" });
+    } catch (error) {
+        console.error(error.message);
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+});
+
+// Creating End point to remove product from cartdat
+app.delete('/removefromcart', fetchUser, async (req, res)=>{
+    console.log('removed', req.body.itemId)
+    let userData = await user.findOne({_id: req.user.id});
+    if(userData.cartData[req.body.itemId] > 0)
+        userData.cartData[req.body.itemId] -=1;
+    await user.findByIdAndUpdate({_id:req.user.id},{cartData:userData.cartData})
+    res.json({ success: true, message: "Item deleted to cart" });
+
+})
+// Creating End poin to get all Data
+app.post('/getcart', fetchUser, async(req,res)=>{
+    console.log('getcart')
+    let userData = await user.findOne({_id:req.user.id})
+    res.json(userData.cartData)
 })
 
 

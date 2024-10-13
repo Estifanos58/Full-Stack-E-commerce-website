@@ -30,7 +30,8 @@ function Navbar() {
         <li onClick={()=>{setMenu("kids")}}><Link to={'kids'}>Kids</Link> {menu === "kids" && <hr/>}</li>
       </ul>
       <div className="nav-login-cart">
-        <button><Link to={'/login'}>Login</Link></button>
+        {localStorage.getItem('auth-token') ? <button onClick={()=>{localStorage.removeItem('auth-token'); window.location.replace('/')}}><Link to={'/logout'}>Logout</Link></button>
+        : <button><Link to={'/login'}>Login</Link></button>}
         <Link to={'/cart'}><img src={cart_icon} alt="" /></Link>
         <div className="nav-cart-count">{getTotalCartItems()}</div>
       </div>
